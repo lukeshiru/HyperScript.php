@@ -1,0 +1,23 @@
+{
+  "name": "lukeshiru/hyper-script",
+  "description": "HyperScript like syntax for PHP",
+  "keywords": [
+    "hyper",
+    "hyperscript",
+    "react",
+    "script"
+  ],
+  "homepage": "https://github.com/lukeshiru/HyperScript.php",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Lucas Ciruzzi",
+      "email": "hi@lshi.ru",
+      "homepage": "https://lshi.ru",
+      "role": "Developer"
+    }
+  ],
+  "require": {
+    "php": ">=7.4"
+  }
+}

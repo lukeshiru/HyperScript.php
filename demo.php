@@ -1,13 +1,12 @@
 <?php
-include "./HyperScript.php";
+require_once "./HyperScript.php";
 
 use function HyperScript\associativeArrayExtract;
 use function HyperScript\associativeArrayMap;
 use function HyperScript\createElement as h;
+use function HyperScript\defaultValue;
 
-$SecureAnchor = function ($props) {
-	return h("a", array_merge(["rel" => "noopener noreferrer"], $props));
-};
+$SecureAnchor = fn ($props) => h("a", array_merge(["rel" => "noopener noreferrer"], $props));
 
 $LinkList = function ($props) use ($SecureAnchor) {
 	[$propsWithoutLinks, $links] = associativeArrayExtract($props, 'links');
@@ -15,9 +14,10 @@ $LinkList = function ($props) use ($SecureAnchor) {
 	return h(
 		"ul",
 		$propsWithoutLinks,
-		...(is_null($links) ? [] : associativeArrayMap($links, function ($name, $link) use ($SecureAnchor) {
-			return h("li", null, h($SecureAnchor, ["href" => $link], $name));
-		}))
+		...(associativeArrayMap(
+			@defaultValue($links, []),
+			fn ($name, $link) => h("li", h($SecureAnchor, ["href" => $link], $name))
+		))
 	);
 };
 

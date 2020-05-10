@@ -2,6 +2,18 @@
 
 namespace HyperScript {
 	/**
+	 * Returns value if isset and is not null.
+	 *
+	 * @param mixed $value Value to check.
+	 * @param mixed $default Default value.
+	 * @returns $value or $default depending on if $value is defined an not null.
+	 */
+	function defaultValue($value, $default = null)
+	{
+		return isset($value) && !is_null($value) ? $value : $default;
+	}
+
+	/**
 	 * Associative array map.
 	 *
 	 * @param array $array Array to map trough.
@@ -11,9 +23,7 @@ namespace HyperScript {
 	function associativeArrayMap($array = [], $callback)
 	{
 		return array_map(
-			function ($key, $value) use ($callback) {
-				return $callback($key, $value);
-			},
+			fn ($key, $value) => $callback($key, $value),
 			array_keys($array),
 			$array
 		);
@@ -28,13 +38,14 @@ namespace HyperScript {
 	 */
 	function associativeArrayExtract($array = [], $key)
 	{
-		return [array_filter(
-			$array,
-			function ($array_key) use ($key) {
-				return $array_key != $key;
-			},
-			ARRAY_FILTER_USE_KEY
-		), isset($array[$key]) ? $array[$key] : null];
+		return [
+			array_filter(
+				$array,
+				fn ($array_key) => $array_key != $key,
+				ARRAY_FILTER_USE_KEY
+			),
+			@defaultValue($array[$key])
+		];
 	}
 
 	/**
@@ -46,19 +57,32 @@ namespace HyperScript {
 	 */
 	function createTag($tagName, $props = [])
 	{
-		$selfClosingTagsNames = ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'];
+		$selfClosingTagsNames = [
+			'area',
+			'base',
+			'br',
+			'col',
+			'embed',
+			'hr',
+			'img',
+			'input',
+			'link',
+			'meta',
+			'param',
+			'source',
+			'track',
+			'wbr'
+		];
 		$isSelfClosing = in_array($tagName, $selfClosingTagsNames);
 		[$propsWithoutChildren, $children] = associativeArrayExtract($props, 'children');
 		$tagNameWithProps = $tagName . (count($propsWithoutChildren) == 0 ? '' : ' ') . join(
 			' ',
 			associativeArrayMap(
 				$propsWithoutChildren,
-				function ($key, $prop) {
-					return "$key=\"$prop\"";
-				}
+				fn ($key, $prop) => "$key=\"$prop\""
 			)
 		);
-		$childrenString = join(is_null($children) ? [] : $children);
+		$childrenString = join(@defaultValue($children, []));
 
 		return $isSelfClosing
 			? "<$tagNameWithProps/>"
@@ -69,20 +93,27 @@ namespace HyperScript {
 	 * HyperScript like function to create elements.
 	 *
 	 * @param string|callable $type Type of element (tagName or function).
-	 * @param array $props Associative array with props of element ("propName" => propValue).
+	 * @param string|array $propsOrChild Associative array with props of element
+	 * `["propName" => propValue]`, or first child when no props.
 	 * @param string[] ...$children Children of element.
 	 * @return string
 	 */
-	function createElement($type, $props = [], ...$children)
+	function createElement($type, $propsOrChild = [], ...$children)
 	{
-		$noNullProps = is_null($props) ? [] : $props;
+		$propsIsChild = is_string($propsOrChild);
+		$props = $propsIsChild ? [] : @defaultValue($propsOrChild, []);
 		$propsWithChildren = array_merge(
-			$noNullProps,
-			["children" => count($children) > 0 ? $children : (isset($noNullProps["children"]) ? $noNullProps["children"] : [])]
+			$props,
+			[
+				"children" => ($propsIsChild || count($children) > 0)
+					? $propsIsChild ? array_merge([$propsOrChild], $children) : $children
+					: (@defaultValue($props["children"], []))
+			]
 		);
 		$output = is_string($type)
 			? createTag($type, $propsWithChildren)
 			: $type($propsWithChildren);
+
 		return is_array($output) ? join($output) : $output;
 	}
 }
